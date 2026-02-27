@@ -1,0 +1,385 @@
+{% comment %}
+  NEW ARRIVALS SLIDER – Product list per category
+  -----------------------------------------------
+  Uses product_list: multi-select products for Category 1 and Category 2.
+  Category names are text inputs. Select multiple products per category at once.
+  Metafields: custom.banner_image, custom.uniqueness, custom.product_qualities (list of metaobject: icon, feature, detail).
+{% endcomment %}
+
+{{ 'new-arrivals-slider.css' | asset_url | stylesheet_tag }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
+<script src="{{ 'new-arrivals-slider.js' | asset_url }}" defer></script>
+
+{% liquid
+  assign default_gender = section.settings.default_gender
+  assign section_id = section.id | append: ''
+  assign section_id_attr = 'template--' | append: section_id
+  assign label_men = section.settings.category_men_name | default: 'Men'
+  assign label_women = section.settings.category_women_name | default: 'Women'
+  assign products_m = section.settings.products_men
+  assign products_w = section.settings.products_women
+  if products_m.size > 0
+    assign show_men = true
+  else
+    assign show_men = false
+  endif
+  if products_w.size > 0
+    assign show_women = true
+  else
+    assign show_women = false
+  endif
+  if show_men and default_gender == 'men'
+    assign active_men = true
+  elsif show_women and default_gender == 'women'
+    assign active_men = false
+  elsif show_men
+    assign active_men = true
+  else
+    assign active_men = false
+  endif
+%}
+
+{%- comment -%} Build JSON from product lists (no trailing commas) {%- endcomment -%}
+{%- capture products_men_json -%}
+  {%- for prod in products_m -%}
+    {%- assign banner = prod.metafields.custom.banner_image -%}
+    {%- assign u_raw = prod.metafields.custom.uniqueness | default: prod.metafields.descriptors.uniqueness -%}
+    {%- if u_raw.value != blank -%}
+      {%- assign uniqueness = u_raw.value -%}
+    {%- elsif u_raw != blank -%}
+      {%- assign uniqueness = u_raw -%}
+    {%- else -%}
+      {%- assign uniqueness = '' -%}
+    {%- endif -%}
+    {%- assign banner_img = banner | default: prod.featured_image | default: prod.images.first -%}
+    {%- assign main_fallback = prod.featured_image | default: prod.images.first -%}
+    {"id":{{ prod.id }},"variant_id":{{ prod.selected_or_first_available_variant.id }},"title":{{ prod.title | json }},"handle":{{ prod.handle | json }},"url":"/products/{{ prod.handle }}","price":{{ prod.price | money | json }},"banner":{% if banner_img %}{{ banner_img | image_url: width: 600 | json }}{% else %}""{% endif %},"grid_images":[{% for img in prod.images limit: 4 %}{{ img | image_url: width: 220 | json }}{% unless forloop.last %},{% endunless %}{% endfor %}],"main_image":{% if prod.images.size >= 5 %}{% for img in prod.images offset: 4 limit: 1 %}{{ img | image_url: width: 420 | json }}{% endfor %}{% elsif main_fallback %}{{ main_fallback | image_url: width: 420 | json }}{% else %}""{% endif %},"uniqueness":{{ uniqueness | default: '' | json }},"product_qualities":[{% for quality in prod.metafields.custom.product_qualities.value %}{"icon":{% if quality.icon %}{{ quality.icon | image_url: width: 80 | json }}{% else %}""{% endif %},"feature":{{ quality.feature.value | default: quality.feature | default: '' | json }},"detail":{{ quality.detail.value | default: quality.detail | default: '' | json }}}{% unless forloop.last %},{% endunless %}{% endfor %}]}{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture products_women_json -%}
+  {%- for prod in products_w -%}
+    {%- assign banner = prod.metafields.custom.banner_image -%}
+    {%- assign u_raw = prod.metafields.custom.uniqueness | default: prod.metafields.descriptors.uniqueness -%}
+    {%- if u_raw.value != blank -%}
+      {%- assign uniqueness = u_raw.value -%}
+    {%- elsif u_raw != blank -%}
+      {%- assign uniqueness = u_raw -%}
+    {%- else -%}
+      {%- assign uniqueness = '' -%}
+    {%- endif -%}
+    {%- assign banner_img = banner | default: prod.featured_image | default: prod.images.first -%}
+    {%- assign main_fallback = prod.featured_image | default: prod.images.first -%}
+    {"id":{{ prod.id }},"variant_id":{{ prod.selected_or_first_available_variant.id }},"title":{{ prod.title | json }},"handle":{{ prod.handle | json }},"url":"/products/{{ prod.handle }}","price":{{ prod.price | money | json }},"banner":{% if banner_img %}{{ banner_img | image_url: width: 600 | json }}{% else %}""{% endif %},"grid_images":[{% for img in prod.images limit: 4 %}{{ img | image_url: width: 220 | json }}{% unless forloop.last %},{% endunless %}{% endfor %}],"main_image":{% if prod.images.size >= 5 %}{% for img in prod.images offset: 4 limit: 1 %}{{ img | image_url: width: 420 | json }}{% endfor %}{% elsif main_fallback %}{{ main_fallback | image_url: width: 420 | json }}{% else %}""{% endif %},"uniqueness":{{ uniqueness | default: '' | json }},"product_qualities":[{% for quality in prod.metafields.custom.product_qualities.value %}{"icon":{% if quality.icon %}{{ quality.icon | image_url: width: 80 | json }}{% else %}""{% endif %},"feature":{{ quality.feature.value | default: quality.feature | default: '' | json }},"detail":{{ quality.detail.value | default: quality.detail | default: '' | json }}}{% unless forloop.last %},{% endunless %}{% endfor %}]}{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+{%- endcapture -%}
+
+<div
+  class="new-arrivals-section2-wrapper"
+  data-section-id="{{ section.id }}"
+  data-autoplay="{{ section.settings.autoplay }}"
+  data-autoplay-speed="{{ section.settings.autoplay_speed }}"
+  data-default-gender="{{ default_gender }}"
+  {{ section.shopify_attributes }}
+>
+  <div
+    id="{{ section_id_attr }}"
+    class="new-arrivals-section-2 page-width tag{{ default_gender | capitalize }}"
+  >
+    {%- comment -%} Header: heading + category switcher {%- endcomment -%}
+    <div class="heading-container">
+      <div class="headings">
+        <h2 class="sec-heading h-bold">NEW</h2>
+        <h2 class="sec-heading h-norm">ARRIVALS</h2>
+      </div>
+      <div class="filters-container" role="group" aria-label="Collection filter">
+        <button
+          type="button"
+          class="filter-tab filter-men{% if active_men %} button-active{% endif %}"
+          data-gender="men"
+          data-gtm-section="new-arrivals-section-2"
+          data-gtm-gender-name="{{ label_men | escape }}"
+          data-gtm-banner-name="{{ label_men | escape }} new-arrivals-section-2"
+          data-gtm-banner-id="{{ label_men | handleize }}-{{ section_id_attr }}"
+          aria-pressed="{% if active_men %}true{% else %}false{% endif %}"
+          {% if show_men == false %}disabled aria-disabled="true"{% endif %}
+        >
+          {{ label_men }}
+        </button>
+        <button
+          type="button"
+          class="filter-tab filter-women{% if active_men == false %} button-active{% endif %}"
+          data-gender="women"
+          data-gtm-section="new-arrivals-section-2"
+          data-gtm-gender-name="{{ label_women | escape }}"
+          data-gtm-banner-name="{{ label_women | escape }} new-arrivals-section-2"
+          data-gtm-banner-id="{{ label_women | handleize }}-{{ section_id_attr }}"
+          aria-pressed="{% if active_men %}false{% else %}true{% endif %}"
+          {% if show_women == false %}disabled aria-disabled="true"{% endif %}
+        >
+          {{ label_women }}
+        </button>
+      </div>
+    </div>
+
+    <div class="content-container-main">
+      {%- comment -%} Left: photo grid + main product image (updated by JS) {%- endcomment -%}
+      <div class="left-product-container">
+        <div class="photo-grid-container">
+          <p>Other Images</p>
+          <div class="photo-grid" aria-hidden="true">
+            <div class="photo"><img src="" alt="" loading="lazy" width="197" height="169"></div>
+            <div class="photo"><img src="" alt="" loading="lazy" width="197" height="169"></div>
+            <div class="photo"><img src="" alt="" loading="lazy" width="197" height="169"></div>
+            <div class="photo"><img src="" alt="" loading="lazy" width="197" height="169"></div>
+          </div>
+        </div>
+        <div class="main-image-container">
+          <img class="main-product-img img-out" src="" alt="" loading="lazy" width="359" height="638" aria-hidden="true">
+          <img class="main-product-img img-in" src="" alt="" loading="lazy" width="359" height="638">
+        </div>
+      </div>
+
+      {%- comment -%} Right: product sliders (only when collection has products) + product info card {%- endcomment -%}
+      <div class="right-container">
+        {%- comment -%} Debug: show message when no products (helps when collections not selected in section settings) {%- endcomment -%}
+        {%- if show_men == false and show_women == false -%}
+          <div class="new-arrivals-no-products" style="padding:1.5rem;background:#f5f5f5;border:1px dashed #ccc;text-align:center;color:#666;font-size:0.9rem;">
+            <p style="margin:0 0 0.5rem;"><strong>No products to display.</strong></p>
+            <p style="margin:0;">Select products for each category: <strong>Theme → Customize → this section → Category 1 products / Category 2 products</strong>.</p>
+          </div>
+        {%- endif -%}
+        {%- if show_men -%}
+          <div
+            class="swiper scrollable-slider men-slider{% if active_men %} active{% endif %}"
+            role="region"
+            aria-label="New arrivals Men slider"
+            data-gender="men"
+            data-autoplay="{{ section.settings.autoplay }}"
+            data-speed="{{ section.settings.autoplay_speed }}"
+            {% if active_men == false %}style="display:none"{% endif %}
+          >
+            <div class="swiper-wrapper products-slider">
+              {%- for prod in products_m -%}
+                {%- assign banner = prod.metafields.custom.banner_image -%}
+                {%- assign slide_img = banner | default: prod.featured_image | default: prod.images.first -%}
+                {%- assign slide_alt = prod.featured_image.alt | default: prod.title | escape -%}
+                <div
+                  class="product-slide swiper-slide"
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label="Slide {{ forloop.index }} of {{ products_m.size }}"
+                  data-prdct-id="{{ prod.id }}"
+                  data-index="{{ forloop.index0 }}"
+                >
+                  {%- if slide_img != blank -%}
+                    <img
+                      src="{{ slide_img | image_url: width: 475 }}"
+                      srcset="{{ slide_img | image_url: width: 300 }} 300w, {{ slide_img | image_url: width: 475 }} 475w, {{ slide_img | image_url: width: 600 }} 600w"
+                      sizes="(max-width: 749px) 100vw, (max-width: 990px) 50vw, 33vw"
+                      width="475"
+                      height="844"
+                      loading="lazy"
+                      class="motion-reduce product-img"
+                      alt="{{ slide_alt }}"
+                    >
+                  {%- else -%}
+                    <div class="product-slide-placeholder" aria-label="{{ prod.title | escape }}"></div>
+                  {%- endif -%}
+                </div>
+              {%- endfor -%}
+            </div>
+            <div class="new-arrivals-2-nav-btns">
+              <button type="button" class="men-nav swiper-button-prev" aria-label="Previous slide"></button>
+              <button type="button" class="men-nav swiper-button-next" aria-label="Next slide"></button>
+            </div>
+          </div>
+        {%- endif -%}
+
+        {%- if show_women -%}
+          <div
+            class="swiper scrollable-slider women-slider{% if active_men == false %} active{% endif %}"
+            role="region"
+            aria-label="New arrivals Women slider"
+            data-gender="women"
+            data-autoplay="{{ section.settings.autoplay }}"
+            data-speed="{{ section.settings.autoplay_speed }}"
+            {% if active_men %}style="display:none"{% endif %}
+          >
+            <div class="swiper-wrapper products-slider">
+              {%- for prod in products_w -%}
+                {%- assign banner = prod.metafields.custom.banner_image -%}
+                {%- assign slide_img = banner | default: prod.featured_image | default: prod.images.first -%}
+                {%- assign slide_alt = prod.featured_image.alt | default: prod.title | escape -%}
+                <div
+                  class="product-slide swiper-slide"
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label="Slide {{ forloop.index }} of {{ products_w.size }}"
+                  data-prdct-id="{{ prod.id }}"
+                  data-index="{{ forloop.index0 }}"
+                >
+                  {%- if slide_img != blank -%}
+                    <img
+                      src="{{ slide_img | image_url: width: 475 }}"
+                      srcset="{{ slide_img | image_url: width: 300 }} 300w, {{ slide_img | image_url: width: 475 }} 475w, {{ slide_img | image_url: width: 600 }} 600w"
+                      sizes="(max-width: 749px) 100vw, (max-width: 990px) 50vw, 33vw"
+                      width="475"
+                      height="844"
+                      loading="lazy"
+                      class="motion-reduce product-img"
+                      alt="{{ slide_alt }}"
+                    >
+                  {%- else -%}
+                    <div class="product-slide-placeholder" aria-label="{{ prod.title | escape }}"></div>
+                  {%- endif -%}
+                </div>
+              {%- endfor -%}
+            </div>
+            <div class="new-arrivals-2-nav-btns">
+              <button type="button" class="women-nav swiper-button-prev" aria-label="Previous slide"></button>
+              <button type="button" class="women-nav swiper-button-next" aria-label="Next slide"></button>
+            </div>
+          </div>
+        {%- endif -%}
+
+        {%- comment -%} Product info card (content filled by JS from JSON) {%- endcomment -%}
+        <div
+          class="product-info-card"
+          style="--na-card-bg: {{ section.settings.card_background }}; --na-text-override: {{ section.settings.text_color_override }};"
+        >
+          <div class="info-header">
+            <div class="tag-container">
+              <div class="new-tag"><p>New</p></div>
+            </div>
+            <div class="info-title">
+              <p class="style-no"></p>
+              <p class="prdct-title"></p>
+            </div>
+          </div>
+          <div class="info-bottom-section">
+            <div class="price-explore">
+              <div class="price-container">
+                <p class="price-info"></p>
+              </div>
+              <div class="buttons-group">
+                <a class="explore-btn" href="#"><p class="explore-btn-txt">Explore</p></a>
+                <button type="button" class="add-to-cart-btn" aria-label="Add to cart">Add to Cart</button>
+              </div>
+            </div>
+            <div
+              class="product-specs"
+              role="region"
+              aria-label="Product specifications"
+            >
+              {%- comment -%} Spec containers populated by JS from product_qualities (metaobject list: icon, feature, detail) {%- endcomment -%}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="new-arrivals-products-{{ section.id }}">
+  {"men":[{{ products_men_json | strip }}],"women":[{{ products_women_json | strip }}]}
+  </script>
+</div>
+
+{% schema %}
+{
+  "name": "New Arrivals Slider",
+  "tag": "section",
+  "class": "section-new-arrivals-slider",
+  "disabled_on": { "groups": ["header", "footer"] },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Categories"
+    },
+    {
+      "type": "text",
+      "id": "category_men_name",
+      "label": "Category 1 name",
+      "default": "Men"
+    },
+    {
+      "type": "text",
+      "id": "category_women_name",
+      "label": "Category 2 name",
+      "default": "Women"
+    },
+    {
+      "type": "product_list",
+      "id": "products_men",
+      "label": "Category 1 products",
+      "limit": 20
+    },
+    {
+      "type": "product_list",
+      "id": "products_women",
+      "label": "Category 2 products",
+      "limit": 20
+    },
+    {
+      "type": "select",
+      "id": "default_gender",
+      "label": "Default category",
+      "options": [
+        { "value": "men", "label": "Category 1" },
+        { "value": "women", "label": "Category 2" }
+      ],
+      "default": "women"
+    },
+    {
+      "type": "header",
+      "content": "Slider"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Autoplay",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "label": "Autoplay speed (ms)",
+      "min": 2000,
+      "max": 8000,
+      "step": 500,
+      "default": 4000
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Card background",
+      "default": "#221f20"
+    },
+    {
+      "type": "color",
+      "id": "text_color_override",
+      "label": "Text color override",
+      "default": "#ffffff"
+    }
+  ],
+  "presets": [
+    {
+      "name": "New Arrivals Slider",
+      "settings": {
+        "category_men_name": "Men",
+        "category_women_name": "Women",
+        "default_gender": "women",
+        "autoplay": false,
+        "autoplay_speed": 4000,
+        "card_background": "#221f20",
+        "text_color_override": "#ffffff"
+      }
+    }
+  ]
+}
+{% endschema %}
