@@ -45,7 +45,7 @@ endif
 {%- capture products_men_json -%}
 {%- for prod in products_m -%}
 {%- assign banner = prod.metafields.custom.banner_image -%}
-{%- assign u_raw = prod.metafields.custom.uniqueness | default: prod.metafields.descriptors.uniqueness -%}
+{%- assign u_raw = prod.metafields.custom.unique_code | default: prod.metafields.descriptors.unique_code -%}
 {%- if u_raw.value != blank -%}
 {%- assign uniqueness = u_raw.value -%}
 {%- elsif u_raw != blank -%}

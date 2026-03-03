@@ -80,7 +80,7 @@
     const exploreBtn = card.querySelector('.explore-btn');
     const addToCartBtn = card.querySelector('.add-to-cart-btn');
     const specsContainer = card.querySelector('.product-specs');
-    var u = product.unique_code;
+    var u = product.uniqueness;
     console.log("u=",u)
     if (typeof u === 'object' && u && u.value != null) u = u.value;
     var uniquenessStr = (u && String(u).trim()) ? String(u).trim() : '';
